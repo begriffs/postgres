@@ -10729,4 +10729,24 @@
   proname => 'pg_partition_root', prorettype => 'regclass',
   proargtypes => 'regclass', prosrc => 'pg_partition_root' },
 
+# rational numbers
+{ oid => '8536', descr => 'I/O',
+  proname => 'rational_in', provolatile => 's', prorettype => 'rational',
+  proargtypes => 'cstring', prosrc => 'rational_in' },
+{ oid => '8537', descr => 'I/O',
+  proname => 'rational_in_float', provolatile => 's', prorettype => 'rational',
+  proargtypes => 'float8', prosrc => 'rational_in_float' },
+{ oid => '8538', descr => 'I/O',
+  proname => 'rational_out', provolatile => 's', prorettype => 'cstring',
+  proargtypes => 'rational', prosrc => 'rational_out' },
+{ oid => '8539', descr => 'I/O',
+  proname => 'rational_out_float', provolatile => 's', prorettype => 'float8',
+  proargtypes => 'rational', prosrc => 'rational_out_float' },
+{ oid => '8540', descr => 'I/O',
+  proname => 'rational_recv', prorettype => 'rational', proargtypes => 'internal',
+  prosrc => 'rational_recv' },
+{ oid => '8541', descr => 'I/O',
+  proname => 'rational_send', prorettype => 'bytea', proargtypes => 'rational',
+  prosrc => 'rational_send' },
+
 ]
