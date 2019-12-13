@@ -3,7 +3,7 @@
  * rational.c
  *	  Rational number data type for the Postgres database system
  *
- * Copyright (c) 1998-2019, PostgreSQL Global Development Group
+ * Copyright (c) 1998-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  src/backend/utils/adt/rational.c
@@ -31,6 +31,7 @@ static int32 gcd(int32, int32);
 static bool simplify(Rational *);
 static int32 cmp(Rational *, Rational *);
 static void neg(Rational *);
+static Rational * create(long long, long long);
 static Rational * add(Rational *, Rational *);
 static Rational * mul(Rational *, Rational *);
 static void mediant(Rational *, Rational *, Rational *);
@@ -45,7 +46,7 @@ PG_FUNCTION_INFO_V1(rational_out);
 PG_FUNCTION_INFO_V1(rational_out_float);
 PG_FUNCTION_INFO_V1(rational_recv);
 PG_FUNCTION_INFO_V1(rational_create);
-PG_FUNCTION_INFO_V1(rational_embed);
+PG_FUNCTION_INFO_V1(rational_from_integer);
 PG_FUNCTION_INFO_V1(rational_send);
 
 Datum
@@ -55,7 +56,6 @@ rational_in(PG_FUNCTION_ARGS)
 			   *after;
 	long long	n,
 				d;
-	Rational   *result = palloc(sizeof(Rational));
 
 	if (!isdigit(*s) && *s != '-')
 		ereport(ERROR,
@@ -86,34 +86,8 @@ rational_in(PG_FUNCTION_ARGS)
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 					 errmsg("Expecting '\\0' but found '%c'", *after)));
-
-		if (d == 0)
-			ereport(ERROR,
-					(errcode(ERRCODE_DIVISION_BY_ZERO),
-					 errmsg("fraction cannot have zero denominator")));
 	}
-
-	if (n < INT32_MIN || n > INT32_MAX || d < INT32_MIN || d > INT32_MAX)
-		ereport(ERROR,
-				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				 errmsg("numerator or denominator outside valid int32 value")));
-
-	/*
-	 * prevent negative denominator, but do not negate the smallest value --
-	 * that would produce overflow
-	 */
-	if (d >= 0 || n == INT32_MIN || d == INT32_MIN)
-	{
-		result->numer = (int32) n;
-		result->denom = (int32) d;
-	}
-	else
-	{
-		result->numer = (int32) -n;
-		result->denom = (int32) -d;
-	}
-
-	PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(create(n, d));
 }
 
 /*
@@ -189,40 +163,18 @@ Datum
 rational_recv(PG_FUNCTION_ARGS)
 {
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
-	Rational   *result = palloc(sizeof(Rational));
-
-	result->numer = pq_getmsgint(buf, sizeof(int32));
-	result->denom = pq_getmsgint(buf, sizeof(int32));
-
-	if (result->denom == 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator: \"%d/%d\"",
-						result->numer, result->denom)));
-
-	PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(create(pq_getmsgint(buf, sizeof(int32)),
+	              pq_getmsgint(buf, sizeof(int32))));
 }
 
 Datum
 rational_create(PG_FUNCTION_ARGS)
 {
-	int32		n = PG_GETARG_INT32(0),
-				d = PG_GETARG_INT32(1);
-	Rational   *result = palloc(sizeof(Rational));
-
-	if (d == 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator: \"%d/%d\"", n, d)));
-
-	result->numer = n;
-	result->denom = d;
-
-	PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(create(PG_GETARG_INT32(0), PG_GETARG_INT32(1)));
 }
 
 Datum
-rational_embed(PG_FUNCTION_ARGS)
+rational_from_integer(PG_FUNCTION_ARGS)
 {
 	int32		n = PG_GETARG_INT32(0);
 	Rational   *result = palloc(sizeof(Rational));
@@ -563,6 +515,40 @@ neg(Rational * r)
 		}
 	}
 	r->numer *= -1;
+}
+
+
+Rational *
+create(long long n, long long d)
+{
+	Rational   *result = palloc(sizeof(Rational));
+
+	if (d == 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_DIVISION_BY_ZERO),
+				 errmsg("fraction cannot have zero denominator")));
+
+	if (n < INT32_MIN || n > INT32_MAX || d < INT32_MIN || d > INT32_MAX)
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("numerator or denominator outside valid int32 value")));
+
+	/*
+	 * prevent negative denominator, but do not negate the smallest value
+	 * or else it would overflow
+	 */
+	if (d >= 0 || n == INT32_MIN || d == INT32_MIN)
+	{
+		result->numer = (int32) n;
+		result->denom = (int32) d;
+	}
+	else
+	{
+		result->numer = (int32) -n;
+		result->denom = (int32) -d;
+	}
+
+	return result;
 }
 
 Rational *

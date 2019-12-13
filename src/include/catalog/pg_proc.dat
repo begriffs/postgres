@@ -10750,20 +10750,11 @@
   prosrc => 'rational_send' },
 
 { oid => '8542', descr => 'Construction',
-  proname => 'rational_create', prorettype => 'rational',
-  proargtypes => 'integer integer', prosrc => 'rational_create' },
-
-# TODO: define rational_tuple
-
+  proname => 'rational', prorettype => 'rational',
+  proargtypes => 'int4 int4', prosrc => 'rational_create' },
 { oid => '8543', descr => 'Construction',
-  proname => 'rational_from_tuple', prorettype => 'rational',
-  proargtypes => 'rational_tuple', prosrc => 'rational_from_tuple' },
-{ oid => '8544', descr => 'Construction',
-  proname => 'rational_from_tuple', prorettype => 'rational',
-  proargtypes => 'rational_tuple', prosrc => 'rational_from_tuple' },
-{ oid => '8545', descr => 'Construction',
-  proname => 'rational_from_integer', prorettype => 'rational',
-  proargtypes => 'integer', prosrc => 'rational_from_integer' },
+  proname => 'rational', prorettype => 'rational',
+  proargtypes => 'int4', prosrc => 'rational_from_integer' },
 
 # TODO: create casts
 
