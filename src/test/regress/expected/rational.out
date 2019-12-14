@@ -1,0 +1,690 @@
+--
+-- Rational numbers
+-- I/O
+-- can parse a simple fraction
+select '1/3'::rational;
+ rational 
+----------
+ 1/3
+(1 row)
+
+-- can parse negatives
+select '-1/3'::rational;
+ rational 
+----------
+ -1/3
+(1 row)
+
+select '1/-3'::rational;
+ rational 
+----------
+ -1/3
+(1 row)
+
+-- SEND works
+select rational_send('1/3');
+   rational_send    
+--------------------
+ \x0000000100000003
+(1 row)
+
+-- casting
+-- tuple helper
+select (1,2)::ratt = '1/2'::rational;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- int
+select 42 = '42/1'::rational;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- from float
+select 0.263157894737::float::rational;
+ rational 
+----------
+ 5/19
+(1 row)
+
+select 3.141592625359::float::rational;
+    rational     
+-----------------
+ 4712235/1499951
+(1 row)
+
+select 0.606557377049::float::rational;
+ rational 
+----------
+ 37/61
+(1 row)
+
+select -0.5::float::rational;
+ ?column? 
+----------
+ -1/2
+(1 row)
+
+select 1.000001::float::rational;
+    rational     
+-----------------
+ 1000001/1000000
+(1 row)
+
+select 1.0000001::float::rational;
+     rational     
+------------------
+ 10000000/9999999
+(1 row)
+
+select 1.00000001::float::rational;
+      rational       
+---------------------
+ 100000001/100000000
+(1 row)
+
+select 1.000000001::float::rational;
+      rational       
+---------------------
+ 999999918/999999917
+(1 row)
+
+select 1.0000000001::float::rational;
+ rational 
+----------
+ 1/1
+(1 row)
+
+select 2147483647::float::rational;
+   rational   
+--------------
+ 2147483647/1
+(1 row)
+
+select 2147483647.1::float::rational;
+ERROR:  value too large for rational
+select 'NAN'::float::rational;
+ERROR:  value too large for rational
+-- to float
+select '1/2'::rational::float;
+ float8 
+--------
+    0.5
+(1 row)
+
+set extra_float_digits = 0; -- default changed in PG12
+select '1/3'::rational::float;
+      float8       
+-------------------
+ 0.333333333333333
+(1 row)
+
+reset extra_float_digits;
+select '-1/2'::rational::float;
+ float8 
+--------
+   -0.5
+(1 row)
+
+-- too big
+select '2147483648/2147483647'::rational;
+ERROR:  numerator or denominator outside valid int32 value
+LINE 1: select '2147483648/2147483647'::rational;
+               ^
+-- no spaces
+select '1 /3'::rational;
+ERROR:  Expecting '/' after number but found ' '
+LINE 1: select '1 /3'::rational;
+               ^
+-- no zero denominator
+select '1/0'::rational;
+ERROR:  fraction cannot have zero denominator
+LINE 1: select '1/0'::rational;
+               ^
+-- quoted number treated as int
+select '1'::rational;
+ rational 
+----------
+ 1/1
+(1 row)
+
+select '-1'::rational;
+ rational 
+----------
+ -1/1
+(1 row)
+
+-- no garbage
+select ''::rational;
+ERROR:  Missing or invalid numerator
+LINE 1: select ''::rational;
+               ^
+select '/'::rational;
+ERROR:  Missing or invalid numerator
+LINE 1: select '/'::rational;
+               ^
+select '2/'::rational;
+ERROR:  Expecting value after '/' but got '\0'
+LINE 1: select '2/'::rational;
+               ^
+select '/2'::rational;
+ERROR:  Missing or invalid numerator
+LINE 1: select '/2'::rational;
+               ^
+select 'sdfkjsdfj34984538'::rational;
+ERROR:  Missing or invalid numerator
+LINE 1: select 'sdfkjsdfj34984538'::rational;
+               ^
+-- simplification
+-- double negative becomes positive
+select rational_simplify('-1/-3');
+ rational_simplify 
+-------------------
+ 1/3
+(1 row)
+
+-- works with negative value
+select rational_simplify('-3/12');
+ rational_simplify 
+-------------------
+ -1/4
+(1 row)
+
+-- dodge the INT32_MIN/-1 mistake
+select rational_simplify('-2147483648/2147483647');
+   rational_simplify    
+------------------------
+ -2147483648/2147483647
+(1 row)
+
+-- don't move negative if it would overflow
+select rational_simplify('1/-2147483648');
+ rational_simplify 
+-------------------
+ 1/-2147483648
+(1 row)
+
+-- biggest value reduces
+select rational_simplify('2147483647/2147483647');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
+-- smallest value reduces
+select rational_simplify('-2147483648/-2147483648');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
+-- idempotent on simplified expression
+select rational_simplify('1/1');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
+-- addition
+-- additive identity
+select '0/1'::rational + '1/2';
+ ?column? 
+----------
+ 1/2
+(1 row)
+
+-- additive inverse
+select '1/2'::rational + '-1/2';
+ ?column? 
+----------
+ 0/4
+(1 row)
+
+-- just regular
+select '1/2'::rational + '1/2';
+ ?column? 
+----------
+ 4/4
+(1 row)
+
+-- forcing intermediate simplification
+select '2147483647/2147483647'::rational + '1/1';
+ ?column? 
+----------
+ 2/1
+(1 row)
+
+-- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
+select '46342/1'::rational + '1/46341';
+ERROR:  intermediate value overflow in rational addition
+-- multiplication
+-- multiplicative identity
+select '1/1'::rational * '1/2';
+ ?column? 
+----------
+ 1/2
+(1 row)
+
+-- multiplicative inverse
+select '2/1'::rational * '1/2';
+ ?column? 
+----------
+ 2/2
+(1 row)
+
+-- just regular
+select '5/8'::rational * '3/5';
+ ?column? 
+----------
+ 15/40
+(1 row)
+
+-- forcing intermediate simplification
+select '2147483647/2147483647'::rational * '2/2';
+ ?column? 
+----------
+ 2/2
+(1 row)
+
+-- overflow
+select '46342/46341'::rational * '46341/46342';
+ERROR:  intermediate value overflow in rational multiplication
+-- division
+select 1::rational / 3;
+ ?column? 
+----------
+ 1/3
+(1 row)
+
+select '2/3'::rational / '2/3';
+ ?column? 
+----------
+ 6/6
+(1 row)
+
+-- negation
+-- flips sign of numerator
+select -('1/2'::rational);
+ ?column? 
+----------
+ -1/2
+(1 row)
+
+-- flips back
+select -('-1/2'::rational);
+ ?column? 
+----------
+ 1/2
+(1 row)
+
+-- overflow not possible
+select -('-2147483648/1'::rational);
+    ?column?    
+----------------
+ -2147483648/-1
+(1 row)
+
+select -('1/-2147483648'::rational);
+    ?column?    
+----------------
+ -1/-2147483648
+(1 row)
+
+select -('-2147483648/-2147483648'::rational);
+ ?column? 
+----------
+ -1/1
+(1 row)
+
+-- subtraction
+-- just regular
+select '1/2'::rational - '1/2';
+ ?column? 
+----------
+ 0/4
+(1 row)
+
+-- can go negative
+select '1/2'::rational - '1/1';
+ ?column? 
+----------
+ -1/2
+(1 row)
+
+-- forcing intermediate simplification
+select '2147483647/2147483647'::rational - '100/100';
+ ?column? 
+----------
+ 0/100
+(1 row)
+
+-- overflow (sqrt(max)+1)/1 - 1/sqrt(max)
+select '46342/1'::rational - '1/46341';
+ERROR:  intermediate value overflow in rational addition
+-- comparison
+-- equal in every way
+select '1/1'::rational = '1/1';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- same equivalence class
+select '20/40'::rational = '22/44';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- negatives work too
+select '-20/40'::rational = '-22/44';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- overflow not possible
+select '46342/46341'::rational = '46342/46341';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- high precision
+select '1/2147483647'::rational = '1/2147483646';
+ ?column? 
+----------
+ f
+(1 row)
+
+select '1/3'::rational * 3 = 1;
+ ?column? 
+----------
+ t
+(1 row)
+
+select 1.0/3.0 = 1.0;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- not everything is equal
+select '2/3'::rational = '8/5';
+ ?column? 
+----------
+ f
+(1 row)
+
+-- negates equality
+select '1/1'::rational <> '1/1';
+ ?column? 
+----------
+ f
+(1 row)
+
+-- overflow not possible
+select '46342/46341'::rational <> '46342/46341';
+ ?column? 
+----------
+ f
+(1 row)
+
+-- not equal
+select '2/3'::rational <> '8/5';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- lt anti-reflexive
+select '1/2'::rational < '1/2';
+ ?column? 
+----------
+ f
+(1 row)
+
+-- gt anti-reflexive
+select '1/2'::rational > '1/2';
+ ?column? 
+----------
+ f
+(1 row)
+
+-- overflow not possible
+select '1/2147483647'::rational < '2/2147483647';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- lte
+select r
+  from unnest(ARRAY[
+      '303700050/303700050',
+      '-2/1',
+      '0/9999999',
+      '-11/17',
+      '100/1',
+      '3/4',
+      '-1/2',
+      '-1/1',
+      '5/8',
+      '6/9',
+      '5/8'
+    ]::rational[]) as r
+order by r asc;
+          r          
+---------------------
+ -2/1
+ -1/1
+ -11/17
+ -1/2
+ 0/9999999
+ 5/8
+ 5/8
+ 6/9
+ 3/4
+ 303700050/303700050
+ 100/1
+(11 rows)
+
+-- gte
+select r
+  from unnest(ARRAY[
+      '303700050/303700050',
+      '-2/1',
+      '0/9999999',
+      '-11/17',
+      '100/1',
+      '3/4',
+      '-1/2',
+      '-1/1',
+      '5/8',
+      '6/9',
+      '5/8'
+    ]::rational[]) as r
+order by r desc;
+          r          
+---------------------
+ 100/1
+ 303700050/303700050
+ 3/4
+ 6/9
+ 5/8
+ 5/8
+ 0/9999999
+ -1/2
+ -11/17
+ -1/1
+ -2/1
+(11 rows)
+
+-- btree
+create table rs (
+  r rational
+);
+create index rs_r_btree on rs using btree(r);
+insert into rs values ('0/7'), ('1/7'), ('2/7'), ('3/7'),
+                      ('4/7'), ('5/7'), ('6/7');
+set enable_seqscan=false;
+explain select * from rs where r > '1/7' and r <= '10/14';
+                                QUERY PLAN                                
+--------------------------------------------------------------------------
+ Bitmap Heap Scan on rs  (cost=4.27..14.97 rows=11 width=8)
+   Recheck Cond: ((r > '1/7'::rational) AND (r <= '10/14'::rational))
+   ->  Bitmap Index Scan on rs_r_btree  (cost=0.00..4.27 rows=11 width=0)
+         Index Cond: ((r > '1/7'::rational) AND (r <= '10/14'::rational))
+(4 rows)
+
+select * from rs where r > '1/7' and r <= '10/14';
+  r  
+-----
+ 2/7
+ 3/7
+ 4/7
+ 5/7
+(4 rows)
+
+set enable_seqscan=true;
+drop table rs cascade;
+-- hash
+create table rs (
+  r rational
+);
+create index rs_r_hash on rs using hash(r);
+insert into rs values ('0/7'), ('1/7');
+set enable_seqscan=false;
+explain select * from rs where r = '0/1';
+                               QUERY PLAN                                
+-------------------------------------------------------------------------
+ Bitmap Heap Scan on rs  (cost=4.09..14.76 rows=11 width=8)
+   Recheck Cond: (r = '0/1'::rational)
+   ->  Bitmap Index Scan on rs_r_hash  (cost=0.00..4.08 rows=11 width=0)
+         Index Cond: (r = '0/1'::rational)
+(4 rows)
+
+select * from rs where r = '0/1';
+  r  
+-----
+ 0/7
+(1 row)
+
+select * from rs where r = '2/7';
+ r 
+---
+(0 rows)
+
+set enable_seqscan=true;
+drop table rs cascade;
+-- aggregates
+select min(r)
+  from unnest(ARRAY[
+      '100/1',
+      NULL,
+      '-11/17',
+      '-1/1'
+    ]::rational[]) as r;
+ min  
+------
+ -1/1
+(1 row)
+
+select max(r)
+  from unnest(ARRAY[
+      '100/1',
+      NULL,
+      '-11/17',
+      '-1/1'
+    ]::rational[]) as r;
+  max  
+-------
+ 100/1
+(1 row)
+
+select max(r)
+  from unnest(ARRAY[
+      NULL, NULL, NULL
+    ]::rational[]) as r;
+ max 
+-----
+ 
+(1 row)
+
+select rational_simplify(sum(r))
+  from unnest(ARRAY[
+      '1/1',  '1/2', NULL,
+      '-3/2', '1/16'
+    ]::rational[]) as r;
+ rational_simplify 
+-------------------
+ 1/16
+(1 row)
+
+select sum(r)
+  from unnest(ARRAY[
+      NULL, NULL, NULL
+    ]::rational[]) as r;
+ sum 
+-----
+ 
+(1 row)
+
+-- stern-brocot intermediates
+-- intermediates start at 1 -- between 0 and Infinity
+select rational_intermediate(NULL, NULL);
+ rational_intermediate 
+-----------------------
+ 1/1
+(1 row)
+
+-- random example
+select rational_intermediate('15/16', 1);
+ rational_intermediate 
+-----------------------
+ 16/17
+(1 row)
+
+select rational_intermediate('15/16', 1)
+  between '15/16'::rational and 1;
+ ?column? 
+----------
+ t
+(1 row)
+
+select rational_intermediate('44320/39365', '77200/12184');
+ rational_intermediate 
+-----------------------
+ 2/1
+(1 row)
+
+select rational_intermediate('44320/39365', '77200/12184')
+  between '44320/39365'::rational and '77200/12184';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- unbounded upper limit produces least greater integer
+select rational_intermediate('1/3', NULL);
+ rational_intermediate 
+-----------------------
+ 1/1
+(1 row)
+
+select rational_intermediate('3/2', NULL);
+ rational_intermediate 
+-----------------------
+ 2/1
+(1 row)
+
+-- though not the other direction
+select rational_intermediate(NULL, '15/16');
+ rational_intermediate 
+-----------------------
+ 1/2
+(1 row)
+
