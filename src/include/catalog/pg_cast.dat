@@ -36,6 +36,12 @@
   castcontext => 'i', castmethod => 'f' },
 { castsource => 'int2', casttarget => 'float8', castfunc => 'float8(int2)',
   castcontext => 'i', castmethod => 'f' },
+
+{ castsource => 'float8', casttarget => 'rational', castfunc => 'rational_in_float',
+  castcontext => 'i', castmethod => 'f' },
+{ castsource => 'rational', casttarget => 'float8', castfunc => 'rational_out_float',
+  castcontext => 'e', castmethod => 'f' },
+
 { castsource => 'int2', casttarget => 'numeric', castfunc => 'numeric(int2)',
   castcontext => 'i', castmethod => 'f' },
 { castsource => 'int4', casttarget => 'int8', castfunc => 'int8(int4)',

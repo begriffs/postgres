@@ -46,7 +46,7 @@ PG_FUNCTION_INFO_V1(rational_out);
 PG_FUNCTION_INFO_V1(rational_out_float);
 PG_FUNCTION_INFO_V1(rational_recv);
 PG_FUNCTION_INFO_V1(rational_create);
-PG_FUNCTION_INFO_V1(rational_from_integer);
+PG_FUNCTION_INFO_V1(rational_in_integer);
 PG_FUNCTION_INFO_V1(rational_send);
 
 Datum
@@ -176,7 +176,7 @@ rational_create(PG_FUNCTION_ARGS)
 }
 
 Datum
-rational_from_integer(PG_FUNCTION_ARGS)
+rational_in_integer(PG_FUNCTION_ARGS)
 {
 	int32		n = PG_GETARG_INT32(0);
 	Rational   *result = palloc(sizeof(Rational));

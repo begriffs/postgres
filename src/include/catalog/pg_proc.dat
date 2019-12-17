@@ -10754,7 +10754,7 @@
   proargtypes => 'int4 int4', prosrc => 'rational_create' },
 { oid => '8543', descr => 'Construction',
   proname => 'rational', prorettype => 'rational',
-  proargtypes => 'int4', prosrc => 'rational_from_integer' },
+  proargtypes => 'int4', prosrc => 'rational_in_integer' },
 
 # TODO: create casts
 
