@@ -12,6 +12,7 @@ test: int8
 test: oid
 test: float4
 test: float8
+test: rational
 test: bit
 test: numeric
 test: txid

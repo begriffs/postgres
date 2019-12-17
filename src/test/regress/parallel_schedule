@@ -13,7 +13,7 @@ test: tablespace
 # ----------
 # The first group of parallel tests
 # ----------
-test: boolean char name varchar text int2 int4 int8 oid float4 float8 bit numeric txid uuid enum money rangetypes pg_lsn regproc
+test: boolean char name varchar text int2 int4 int8 oid float4 float8 rational bit numeric txid uuid enum money rangetypes pg_lsn
 
 # ----------
 # The second group of parallel tests
@@ -27,7 +27,7 @@ test: strings numerology point lseg line box path polygon circle date time timet
 # geometry depends on point, lseg, box, path, polygon and circle
 # horology depends on interval, timetz, timestamp, timestamptz
 # ----------
-test: geometry horology regex oidjoins type_sanity opr_sanity misc_sanity comments expressions
+test: geometry horology regex regproc oidjoins type_sanity opr_sanity misc_sanity comments expressions
 
 # ----------
 # These four each depend on the previous one
