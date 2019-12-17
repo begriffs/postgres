@@ -595,7 +595,7 @@
   typcategory => 'P', typinput => 'anyrange_in', typoutput => 'anyrange_out',
   typreceive => '-', typsend => '-', typalign => 'd', typstorage => 'x' },
 
-{ oid => '8600', array_type_oid => 'nnnn',
+{ oid => '8600', array_type_oid => '8601',
   descr => 'rational numbers (fractions) with int4 numerator and denominator',
   typname => 'rational', typlen => '8', typbyval => 't', typtype => 'b',
   typcategory => 'N', typinput => 'rational_in', typoutput => 'rational_out',

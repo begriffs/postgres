@@ -10758,9 +10758,6 @@
 
 # TODO: create casts
 
-{ oid => '8546', descr => 'Arithmetic',
-  proname => 'rational_add', prorettype => 'rational',
-  proargtypes => 'rational rational', prosrc => 'rational_add' },
 { oid => '8547', descr => 'Arithmetic',
   proname => 'rational_add', prorettype => 'rational',
   proargtypes => 'rational rational', prosrc => 'rational_add' },
@@ -10784,25 +10781,25 @@
   proargtypes => 'rational rational', prosrc => 'rational_intermediate' },
 
 { oid => '8554', descr => 'Comparison',
-  proname => 'rational_eq', prorettype => 'boolean',
+  proname => 'rational_eq', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_eq' },
 { oid => '8555', descr => 'Comparison',
-  proname => 'rational_ne', prorettype => 'boolean',
+  proname => 'rational_ne', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_ne' },
 { oid => '8556', descr => 'Comparison',
-  proname => 'rational_lt', prorettype => 'boolean',
+  proname => 'rational_lt', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_lt' },
 { oid => '8557', descr => 'Comparison',
-  proname => 'rational_le', prorettype => 'boolean',
+  proname => 'rational_le', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_le' },
 { oid => '8558', descr => 'Comparison',
-  proname => 'rational_gt', prorettype => 'boolean',
+  proname => 'rational_gt', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_gt' },
 { oid => '8559', descr => 'Comparison',
-  proname => 'rational_ge', prorettype => 'boolean',
+  proname => 'rational_ge', prorettype => 'bool',
   proargtypes => 'rational rational', prosrc => 'rational_ge' },
 { oid => '8560', descr => 'Comparison',
-  proname => 'rational_cmp', prorettype => 'integer',
+  proname => 'rational_cmp', prorettype => 'int4',
   proargtypes => 'rational rational', prosrc => 'rational_cmp' },
 { oid => '8561', descr => 'Comparison',
   proname => 'rational_smaller', prorettype => 'rational',
@@ -10812,7 +10809,7 @@
   proargtypes => 'rational rational', prosrc => 'rational_larger' },
 
 { oid => '8563', descr => 'Hash',
-  proname => 'rational_hash', prorettype => 'integer',
+  proname => 'rational_hash', prorettype => 'int4',
   proargtypes => 'rational', prosrc => 'rational_hash' },
 
 ]
